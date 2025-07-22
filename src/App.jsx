@@ -10,7 +10,7 @@ function App() {
   const [SecondE, setSecondE] = useState('');
   const [EiList, setEiList] = useState([]);
   const [K_val, setK_val] = useState('');
-	
+  const [minertiaTable, setMinertiaTable] = useState('');
   const [paramtype, setparamtype] = useState(null);
   const [Band, setBand] = useState({BandState: "",
     BandEnergy: "",BandNum: "",});
@@ -32,11 +32,7 @@ function App() {
     setFirstE(e.target.value);
     
   };
-  const handleChangeK = (e) => {
-    
-    setK_val(e.target.value);
-    
-  };
+
     const handleChangeE2 = (e) => {
     
     setSecondE(e.target.value);
@@ -55,7 +51,7 @@ const CalBestFit = () => {
   const state = parseFloat(BandState);
   const energy = parseFloat(BandEnergy);
   const num = parseInt(BandNum);
-  const k_val = parseFloat(K_val);
+  
   
 
   if (isNaN(state) || isNaN(energy) || isNaN(num) || isNaN(E1)) {
@@ -68,39 +64,29 @@ const CalBestFit = () => {
   let a_val;
   let data = [];
 
-  if (state !== 0.5 && state !== 0 &&k_val==0) {
-  //beta band 
-    Minertia = (E1-energy) / ((state + 1) * (state + 2) - state * (state + 1));
-    for (let i = 0; i < num; i++) {
-      const spin = state + i;
-      const Ei = Minertia * spin * (spin + 1) - Minertia * state * (state + 1)+energy;
-      data.push({ key: i, Level: spin.toFixed(1), Energy: Ei.toFixed(3) });
-    }
-    setEiList(data);
-  } 
-  else if(state==0 &&k_val==0){
-  //ground state band
+if(state==0){
+  //ground state band and beta bands
   Minertia = (E1-energy) / ((state + 2) * (state + 3));
     for (let i = 0; i < num*2; i++) {
       if(i%2==0){
       const spin = i;
-      const Ei = Minertia *(spin *(spin + 1)-k_val**2)+energy ;
+      const Ei = Minertia *(spin *(spin + 1)-state**2)+energy ;
       data.push({ key: i, Level: spin.toFixed(1), Energy: Ei.toFixed(3) });}
       else{continue;}
       setEiList(data);  
     }}
     
-    else if(k_val==0&&state>=k_val){
+    else if(state>0 && state!==0.5){
     //other k bands
-  Minertia = (E1-energy)/((state+1)*(state+2)-(k_val+1)*k_val);
+  Minertia = (E1-energy)/((state+1)*(state+2)-(state+1)*state);
     for (let i = 0; i < num; i++) {
       const spin = i+state;
-      const Ei = Minertia *(spin*(spin + 1)-k_val*(k_val+1))+energy;
+      const Ei = Minertia *(spin*(spin + 1)-state*(state+1))+energy;
       data.push({ key: i, Level: spin.toFixed(1), Energy: Ei.toFixed(3) });
     
     }
     setEiList(data);
-    setResult(`Rotation band of :${k_val}`); 
+    setResult(`Rotation band of :${state}`); 
     
   }
   
@@ -125,7 +111,73 @@ const CalBestFit = () => {
 };
   
   
+
+  const [text, setText] = useState('');
+  const [floatArray, setFloatArray] = useState([]);
+
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+  };
+
+  const parseFloats = () => {
+  const rawValues = text.split(','); // assume `text` holds the user input string
+  const floats = rawValues
+    .map(str => parseFloat(str.trim()))
+    .filter(num => !isNaN(num)); // clean floats
+
+  setFloatArray(floats); // save to state if needed
+
+  const { BandState, BandEnergy, BandNum } = Band;
+  const state = parseFloat(BandState);
+  const energy = parseFloat(BandEnergy);
+  const num = parseInt(BandNum);
+  let table = [];
+
+
+  if (state == 0) {
+    
+    for (let i = 1; i < floats.length; i++) {
+      const E_n = floats[i];
+
+
+      const spin_n = i * 2; // even-spin steps: 0, 2, 4, ...
+      const Minertia = 1/((E_n-energy) / ((spin_n ) * (spin_n + 1)))/2;
+
+      table.push({
+        index: i,
+        spin: spin_n,
+        minertia: Minertia.toFixed(3),
+      });
+    }
+
+    console.table(table); // show in console
+    setMinertiaTable(table); // optionally store to display in a Table UI
+  }
   
+  else if(state>0 && state!==0.5){
+  for (let i = 1; i < floats.length; i++) {
+      const E_n = floats[i];
+
+
+      const spin_n = i+state;
+      const Minertia = 1/((E_n-energy)/(spin_n*(spin_n+1)-state*(state+1)))/2 ;
+
+      table.push({
+        index: i,
+        spin: spin_n,
+        minertia: Minertia.toFixed(3),
+      });
+    }
+
+    console.table(table); // show in console
+    setMinertiaTable(table);
+  
+  }
+  
+  
+  
+};
+
 
 
   return (
@@ -191,28 +243,8 @@ const CalBestFit = () => {
 	 />
       
       </div>
-      <div>
-      <Input
-  	   name="K_val"
-  	   addonBefore={<span className="addon-label">K</span>}
-  	   placeholder="Enter K value"
-  	   allowClear
-  	   value={K_val}
-  	   onChange={handleChangeK}
-  	   style={{ width: 300 }}
-	 />
-	 
-	 
-	<Select
-      placeholder="Select an parameter"
-      onChange={handleChangeParam}
-      value={paramtype}
-      style={{ width: 200 }}
-      >
-      <Select.Option value="odd">odd</Select.Option>
-      <Select.Option value="even">even</Select.Option>
-      </Select>
-      </div>
+     
+      
       <Space direction="vertical" size="large">
       <div />
 	
@@ -250,8 +282,29 @@ const CalBestFit = () => {
       <p className="read-the-docs">
          Note: The second excitation energy is only required for band head of spin 1/2 as there is an extra parameter a need to be calculated.
       </p>
-     
+     <div>
+     <h2> If the energies of band is know, enter energies from band head to calculate evolution of moment of inertia
+     </h2>
+     <Input
+        placeholder="Enter comma-separated floats (e.g. 1.1, 2.3, 4.5)"
+        value={text}
+        onChange={handleTextChange}
+        style={{ width: 400 }}
+      />
+      <Button onClick={parseFloats} type="primary" style={{ marginLeft: 10 }}>
+        Parse
+      </Button>
       
+      <Table
+  columns={[
+    { title: "Index", dataIndex: "index", key: "index" },
+    { title: "Spin J", dataIndex: "spin", key: "spin" },
+    { title: "Moment of Inertia (ℏ²)", dataIndex: "minertia", key: "minertia" },
+  ]}
+  dataSource={minertiaTable} // from setMinertiaTable
+  pagination={false}
+/>
+      </div>
     </div>
     </>
   )
