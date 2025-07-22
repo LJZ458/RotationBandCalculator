@@ -11,7 +11,7 @@ function App() {
   const [EiList, setEiList] = useState([]);
   const [K_val, setK_val] = useState('');
 	
-
+  const [paramtype, setparamtype] = useState(null);
   const [Band, setBand] = useState({BandState: "",
     BandEnergy: "",BandNum: "",});
 
@@ -42,7 +42,11 @@ function App() {
     setSecondE(e.target.value);
     
   };
-  
+  const handleChangeParam = (value) => {
+    setparamtype(value);
+    console.log('paramtype:', value);
+
+  };
   
 const CalBestFit = () => {
   const { BandState, BandEnergy, BandNum } = Band;
@@ -52,6 +56,7 @@ const CalBestFit = () => {
   const energy = parseFloat(BandEnergy);
   const num = parseInt(BandNum);
   const k_val = parseFloat(K_val);
+  
 
   if (isNaN(state) || isNaN(energy) || isNaN(num) || isNaN(E1)) {
     setResult("Please enter valid numbers for all inputs.");
@@ -85,7 +90,7 @@ const CalBestFit = () => {
       setEiList(data);  
     }}
     
-    else if(k_val!==0&&state>=k_val){
+    else if(k_val==0&&state>=k_val){
     //other k bands
   Minertia = (E1-energy)/((state+1)*(state+2)-(k_val+1)*k_val);
     for (let i = 0; i < num; i++) {
@@ -99,9 +104,9 @@ const CalBestFit = () => {
     
   }
   
-  else if(state==0.5&&k_val==0){
+  else if(state==0.5){
   
-  Minertia = (1.5*(E1-energy)+(E2-energy))/15;
+  Minertia = ((E1-energy)+1.5*(E2-energy))/15;
   a_val = 1/3*((E1-energy)/Minertia-3);
     for (let i = 0; i < num; i++) {
      
@@ -196,6 +201,17 @@ const CalBestFit = () => {
   	   onChange={handleChangeK}
   	   style={{ width: 300 }}
 	 />
+	 
+	 
+	<Select
+      placeholder="Select an parameter"
+      onChange={handleChangeParam}
+      value={paramtype}
+      style={{ width: 200 }}
+      >
+      <Select.Option value="odd">odd</Select.Option>
+      <Select.Option value="even">even</Select.Option>
+      </Select>
       </div>
       <Space direction="vertical" size="large">
       <div />
