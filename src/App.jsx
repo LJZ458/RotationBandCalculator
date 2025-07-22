@@ -9,6 +9,7 @@ function App() {
   const [FirstE, setFirstE] = useState('');
   const [SecondE, setSecondE] = useState('');
   const [EiList, setEiList] = useState([]);
+  const [K_val, setK_val] = useState('');
 	
 
   const [Band, setBand] = useState({BandState: "",
@@ -31,6 +32,11 @@ function App() {
     setFirstE(e.target.value);
     
   };
+  const handleChangeK = (e) => {
+    
+    setK_val(e.target.value);
+    
+  };
     const handleChangeE2 = (e) => {
     
     setSecondE(e.target.value);
@@ -45,6 +51,7 @@ const CalBestFit = () => {
   const state = parseFloat(BandState);
   const energy = parseFloat(BandEnergy);
   const num = parseInt(BandNum);
+  const k_val = parseFloat(K_val);
 
   if (isNaN(state) || isNaN(energy) || isNaN(num) || isNaN(E1)) {
     setResult("Please enter valid numbers for all inputs.");
@@ -56,7 +63,8 @@ const CalBestFit = () => {
   let a_val;
   let data = [];
 
-  if (state !== 0.5 && state !== 0) {
+  if (state !== 0.5 && state !== 0 &&k_val==0) {
+  //beta band 
     Minertia = (E1-energy) / ((state + 1) * (state + 2) - state * (state + 1));
     for (let i = 0; i < num; i++) {
       const spin = state + i;
@@ -65,17 +73,33 @@ const CalBestFit = () => {
     }
     setEiList(data);
   } 
-  else if(state==0){
-  Minertia = (E1-energy) / ((state + 1) * (state + 2) - state * (state + 1));
+  else if(state==0 &&k_val==0){
+  //ground state band
+  Minertia = (E1-energy) / ((state + 2) * (state + 3));
     for (let i = 0; i < num*2; i++) {
       if(i%2==0){
-      const spin = state + i;
-      const Ei = Minertia * spin * (spin + 1) - Minertia * state * (state + 1)+energy;
+      const spin = i;
+      const Ei = Minertia *(spin *(spin + 1)-k_val**2)+energy ;
       data.push({ key: i, Level: spin.toFixed(1), Energy: Ei.toFixed(3) });}
+      else{continue;}
+      setEiList(data);  
+    }}
+    
+    else if(k_val!==0&&state>=k_val){
+    //other k bands
+  Minertia = (E1-energy)/((state+1)*(state+2)-(k_val+1)*k_val);
+    for (let i = 0; i < num; i++) {
+      const spin = i+state;
+      const Ei = Minertia *(spin*(spin + 1)-k_val*(k_val+1))+energy;
+      data.push({ key: i, Level: spin.toFixed(1), Energy: Ei.toFixed(3) });
+    
     }
-    setEiList(data);  
+    setEiList(data);
+    setResult(`Rotation band of :${k_val}`); 
+    
   }
-  else if(state==0.5){
+  
+  else if(state==0.5&&k_val==0){
   
   Minertia = (1.5*(E1-energy)+(E2-energy))/15;
   a_val = 1/3*((E1-energy)/Minertia-3);
@@ -91,7 +115,7 @@ const CalBestFit = () => {
   
   else {
     setEiList([]);
-    setResult(`BandHead Energy: ${resultEnergy.toFixed(3)} keV`);
+    setResult(`Input Error!`);
   }
 };
   
@@ -124,7 +148,6 @@ const CalBestFit = () => {
             onChange={handleChangeBand}
             style={{ width: 300 }}
           />
-
           <Input
             name="BandEnergy"
             addonBefore={<span className="addon-label">BandHead Energy</span>}
@@ -161,15 +184,27 @@ const CalBestFit = () => {
   	   onChange={handleChangeE2}
   	   style={{ width: 300 }}
 	 />
+      
+      </div>
+      <div>
+      <Input
+  	   name="K_val"
+  	   addonBefore={<span className="addon-label">K</span>}
+  	   placeholder="Enter K value"
+  	   allowClear
+  	   value={K_val}
+  	   onChange={handleChangeK}
+  	   style={{ width: 300 }}
+	 />
       </div>
       <Space direction="vertical" size="large">
       <div />
 	
-      <div>
+      <div style={{ display: 'flex', alignItems: 'left', marginTop: 20 }}>
        <Button type="primary" onClick={CalBestFit}>
             Calculate
           </Button>
- 
+ 	
      
       </div>
       </Space>
@@ -193,7 +228,9 @@ const CalBestFit = () => {
   />
 )}
    
-      
+      <p className="read-the-docs">
+         This calculator is based on the simplest model of an axial symmetric nucleus. The values should only be used as a quick estimation during analysis.
+      </p>
       <p className="read-the-docs">
          Note: The second excitation energy is only required for band head of spin 1/2 as there is an extra parameter a need to be calculated.
       </p>
